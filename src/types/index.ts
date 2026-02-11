@@ -10,8 +10,9 @@ export type Knowledge = {
   title: string;
   content: string;
   category: 'SOP' | 'Product' | 'Tacit';
-  createdAt: Date;
-  updatedAt: Date;
+  authorId: string;
+  createdAt: any; // Allow for Firestore Timestamps
+  updatedAt: any; // Allow for Firestore Timestamps
 };
 
 export type ChatMessage = {

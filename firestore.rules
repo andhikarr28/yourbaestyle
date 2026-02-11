@@ -59,96 +59,50 @@ service cloud.firestore {
     function isOwnerOrAdmin(userId) {
       return isOwner(userId) || isAdmin();
     }
-
-    /**
-     * Checks if the user is the owner of an existing document.
-     * Used for safe update and delete operations.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
     
     // -------------------------------------------------------------------------
     // User Profiles
     // -------------------------------------------------------------------------
-
-    /**
-     * @description Controls access to a user's own profile document.
-     * @path /users/{userId}
-     * @allow (get) An authenticated user reading their own profile.
-     * @allow (create) A new user creating their own profile for the first time.
-     * @deny (get) A user trying to read another user's profile.
-     * @deny (list) Any user trying to list all users in the database.
-     * @principle Restricts access to a user's own data tree and allows self-creation of a root profile.
-     */
     match /users/{userId} {
       allow get: if isOwnerOrAdmin(userId);
       allow list: if false; // Prevent listing all users for privacy.
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
     
     // -------------------------------------------------------------------------
-    // User-Owned Knowledge Entries
+    // Global Knowledge Base
     // -------------------------------------------------------------------------
-    
-    /**
-     * @description Secures knowledge documents created by a user.
-     * @path /users/{userId}/knowledge/{knowledgeId}
-     * @allow (create) An authenticated user creating a new knowledge entry in their own space.
-     * @allow (list) An authenticated user listing all of their own knowledge entries.
-     * @deny (create) A user trying to create a knowledge entry under another user's ID.
-     * @deny (update) A user trying to change the 'authorId' of an existing entry.
-     * @principle Enforces document ownership for all writes and validates relational integrity between the document's authorId and its path.
-     */
-    match /users/{userId}/knowledge/{knowledgeId} {
-      allow get: if isOwnerOrAdmin(userId);
-      allow list: if isOwnerOrAdmin(userId);
-      allow create: if isOwner(userId) && request.resource.data.authorId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.authorId == resource.data.authorId;
-      allow delete: if isExistingOwner(userId);
+    match /knowledge/{knowledgeId} {
+      // Any signed-in user can read the knowledge base.
+      allow read: if isSignedIn();
+      // Only the author or an admin can create, update, or delete.
+      allow create: if isOwner(request.resource.data.authorId) || isAdmin();
+      allow update: if isOwner(resource.data.authorId) || isAdmin();
+      allow delete: if isOwner(resource.data.authorId) || isAdmin();
     }
     
     // -------------------------------------------------------------------------
     // User-Owned Chat Logs
     // -------------------------------------------------------------------------
-    
-    /**
-     * @description Secures chat log documents for a specific user.
-     * @path /users/{userId}/chatLogs/{chatLogId}
-     * @allow (create) An authenticated user creating a new chat log from their session.
-     * @allow (get) An authenticated user reading one of their past chat logs.
-     * @deny (list) An admin trying to list chat logs (admins can only get specific logs). Let's assume listing is owner-only for performance/privacy.
-     * @deny (update) Any user trying to modify a chat log after it has been created.
-     * @principle Enforces document ownership for creation and makes logs immutable after creation to preserve conversation history.
-     */
     match /users/{userId}/chatLogs/{chatLogId} {
       allow get: if isOwnerOrAdmin(userId);
       allow list: if isOwnerOrAdmin(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
       allow update: if false; // Chat logs should be immutable.
-      allow delete: if isExistingOwner(userId); // Allow owner to delete their logs.
+      allow delete: if isOwner(userId); // Allow owner to delete their logs.
     }
     
     // -------------------------------------------------------------------------
     // Admin Roles
     // -------------------------------------------------------------------------
-    
-    /**
-     * @description Secures the collection that defines who is an administrator. This collection is read-only from the client.
-     * @path /roles_admin/{userId}
-     * @allow (get) An authenticated user checking if a specific user is an admin.
-     * @deny (create) Any client trying to make themselves an admin.
-     * @deny (list) A non-admin user trying to discover all other admins.
-     * @principle Prevents client-side privilege escalation. Admin roles must be managed via the Firebase Console or a secure backend environment.
-     */
     match /roles_admin/{userId} {
       allow get: if isSignedIn();
       allow list: if isAdmin();
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create: if false; // Must be managed server-side
+      allow update: if false; // Must be managed server-side
+      allow delete: if false; // Must be managed server-side
     }
   }
 }

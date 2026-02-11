@@ -140,18 +140,14 @@
         }
       },
       {
-        "path": "/users/{userId}/knowledge/{knowledgeId}",
+        "path": "/knowledge/{knowledgeId}",
         "definition": {
           "entityName": "Knowledge",
           "schema": {
             "$ref": "#/backend/entities/Knowledge"
           },
-          "description": "Stores knowledge entries created by each user. Includes denormalized 'authorId' field for authorization independence. Path-based ownership ensures only the user can access their own knowledge.",
+          "description": "Stores all knowledge entries for the organization.",
           "params": [
-            {
-              "name": "userId",
-              "description": "The unique ID of the user, matching their Firebase Authentication UID."
-            },
             {
               "name": "knowledgeId",
               "description": "The unique ID of the knowledge document."
@@ -196,6 +192,6 @@
         }
       }
     ],
-    "reasoning": "This Firestore structure is designed to support the YourbAIstyle application, focusing on secure access control, efficient data retrieval, and scalability. It leverages path-based ownership for user-specific data and a global roles collection for administrative privileges. Authorization Independence is achieved by storing the `authorId` within each Knowledge document, eliminating the need for `get()` calls to a parent user document to determine ownership. QAPs (Rules are not Filters) is achieved because all entities within a collection share the same security posture. For example, only the owner can read/write data in the `/users/{userId}/knowledge/{knowledgeId}` collection. The structure uses explicit state modeling is used for the User `role` field (DBAC - Database Auth over Claims). The absence of a membership model is due to there being no collaborative entities."
+    "reasoning": "This Firestore structure is designed to support the YourbAIstyle application, focusing on secure access control, efficient data retrieval, and scalability. It leverages path-based ownership for user-specific data (profiles, chat logs) and a global collection for shared organizational knowledge. Administrative privileges are managed via a dedicated roles collection. This separation ensures both security and scalability."
   }
 }
