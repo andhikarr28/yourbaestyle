@@ -1,31 +1,24 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { getKnowledgeItems } from '@/services/knowledge-service';
+import { useState, useMemo } from 'react';
 import type { Knowledge } from '@/types';
 import { KnowledgeCard } from './knowledge-card';
 import { Skeleton } from '../ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy } from 'firebase/firestore';
 
 const categories: Knowledge['category'][] = ['SOP', 'Product', 'Tacit'];
 
 export default function KnowledgeList() {
-  const [knowledge, setKnowledge] = useState<Knowledge[]>([]);
-  const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
 
-  useEffect(() => {
-    async function loadKnowledge() {
-      try {
-        const items = await getKnowledgeItems();
-        setKnowledge(items);
-      } catch (error) {
-        console.error('Failed to fetch knowledge items:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadKnowledge();
-  }, []);
+  const knowledgeQuery = useMemoFirebase(() => 
+    firestore ? query(collection(firestore, 'knowledge'), orderBy('updatedAt', 'desc')) : null,
+    [firestore]
+  );
+  
+  const { data: knowledge, isLoading: loading } = useCollection<Knowledge>(knowledgeQuery);
 
   if (loading) {
     return (
@@ -35,6 +28,12 @@ export default function KnowledgeList() {
         ))}
       </div>
     );
+  }
+
+  const filteredKnowledge = (category: Knowledge['category'] | 'all') => {
+    if (!knowledge) return [];
+    if (category === 'all') return knowledge;
+    return knowledge.filter(item => item.category === category);
   }
 
   return (
@@ -48,7 +47,7 @@ export default function KnowledgeList() {
       
       <TabsContent value="all">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {knowledge.map(item => (
+          {filteredKnowledge('all').map(item => (
             <KnowledgeCard key={item.id} item={item} />
           ))}
         </div>
@@ -57,7 +56,7 @@ export default function KnowledgeList() {
       {categories.map(category => (
         <TabsContent key={category} value={category}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {knowledge.filter(item => item.category === category).map(item => (
+            {filteredKnowledge(category).map(item => (
               <KnowledgeCard key={item.id} item={item} />
             ))}
           </div>

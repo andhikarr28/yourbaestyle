@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { chatbotAnswersQuestions } from "@/ai/flows/chatbot-answers-questions";
-import { logInteraction } from "@/services/chat-service";
 import { useAuth } from "@/components/auth-provider";
 import { type ChatMessage } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -11,9 +10,12 @@ import { SendHorizonal, Bot } from "lucide-react";
 import { ChatMessageBubble } from "./chat-message";
 import { ScrollArea } from "../ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { useFirestore, addDocumentNonBlocking } from "@/firebase";
+import { collection, serverTimestamp } from "firebase/firestore";
 
 export default function ChatView() {
   const { user } = useAuth();
+  const firestore = useFirestore();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +29,19 @@ export default function ChatView() {
       });
     }
   }, [messages]);
+  
+  const logInteraction = async (userId: string, userMessage: string, botResponse: string) => {
+    if (!firestore) return;
+    const chatLogRef = collection(firestore, 'users', userId, 'chatLogs');
+    const logEntry = {
+      userId,
+      userMessage,
+      botResponse,
+      timestamp: serverTimestamp(),
+    };
+    addDocumentNonBlocking(chatLogRef, logEntry);
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

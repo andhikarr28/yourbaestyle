@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
-import { deleteItemAction } from "@/app/admin/actions";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -18,21 +17,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { useFirestore } from "@/firebase";
+import { doc, deleteDoc } from "firebase/firestore";
 
 export const columns = (
-    onEdit: (item: Knowledge) => void,
-    onRefresh: () => void
+    onEdit: (item: Knowledge) => void
 ) => {
   const { toast } = useToast();
+  const firestore = useFirestore();
     
   const handleDelete = async (id: string) => {
-    const result = await deleteItemAction(id);
-    if(result.success) {
+    if (!firestore) return;
+    try {
+      await deleteDoc(doc(firestore, "knowledge", id));
       toast({ title: "Success", description: "Item deleted successfully." });
-      onRefresh();
-    } else {
-      toast({ variant: "destructive", title: "Error", description: result.error });
+      // Real-time listener in data-table will handle UI update.
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message || "Failed to delete item." });
     }
   };
 
@@ -55,7 +57,10 @@ export const columns = (
     {
       header: 'Last Updated',
       accessor: 'updatedAt',
-      cell: (item: Knowledge) => <div className="text-sm">{format(new Date(item.updatedAt), 'PPp')}</div>
+      cell: (item: Knowledge) => {
+        const date = item.updatedAt?.toDate ? item.updatedAt.toDate() : new Date(item.updatedAt);
+        return <div className="text-sm">{format(date, 'PPp')}</div>
+      }
     },
     {
       header: 'Actions',

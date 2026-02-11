@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import type { Knowledge } from "@/types";
-import { getKnowledgeItems } from "@/services/knowledge-service";
 import {
   Table,
   TableBody,
@@ -17,24 +16,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PlusCircle } from "lucide-react";
 import { columns } from "./columns";
 import { KnowledgeDialog } from "./knowledge-dialog";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, query, orderBy } from "firebase/firestore";
 
 export function KnowledgeDataTable() {
-  const [data, setData] = useState<Knowledge[]>([]);
-  const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
   const [filter, setFilter] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Knowledge | null>(null);
 
-  const fetchData = async () => {
-    setLoading(true);
-    const items = await getKnowledgeItems();
-    setData(items);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const knowledgeQuery = useMemoFirebase(() => 
+    firestore ? query(collection(firestore, 'knowledge'), orderBy('updatedAt', 'desc')) : null,
+    [firestore]
+  );
+  
+  const { data, isLoading: loading } = useCollection<Knowledge>(knowledgeQuery);
 
   const handleEdit = (item: Knowledge) => {
     setEditingItem(item);
@@ -46,18 +42,18 @@ export function KnowledgeDataTable() {
     setIsDialogOpen(true);
   };
   
-  const handleDialogClose = (refresh: boolean) => {
+  const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingItem(null);
-    if (refresh) {
-      fetchData();
-    }
   };
 
-  const filteredData = data.filter(item =>
-    item.title.toLowerCase().includes(filter.toLowerCase()) ||
-    item.content.toLowerCase().includes(filter.toLowerCase())
-  );
+  const filteredData = useMemo(() => {
+    if (!data) return [];
+    return data.filter(item =>
+      item.title.toLowerCase().includes(filter.toLowerCase()) ||
+      item.content.toLowerCase().includes(filter.toLowerCase())
+    )
+  }, [data, filter]);
 
   return (
     <div className="space-y-4">
@@ -77,7 +73,7 @@ export function KnowledgeDataTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              {columns(handleEdit, fetchData).map(col => (
+              {columns(handleEdit).map(col => (
                 <TableHead key={col.header}>{col.header}</TableHead>
               ))}
             </TableRow>
@@ -86,15 +82,17 @@ export function KnowledgeDataTable() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={columns(handleEdit, fetchData).length}>
-                    <Skeleton className="h-8 w-full" />
-                  </TableCell>
+                  {columns(handleEdit).map(col => (
+                    <TableCell key={col.accessor}>
+                      <Skeleton className="h-8 w-full" />
+                    </TableCell>
+                  ))}
                 </TableRow>
               ))
             ) : filteredData.length > 0 ? (
               filteredData.map(item => (
                 <TableRow key={item.id}>
-                  {columns(handleEdit, fetchData).map(col => (
+                  {columns(handleEdit).map(col => (
                     <TableCell key={col.accessor}>
                       {col.cell(item)}
                     </TableCell>
@@ -103,7 +101,7 @@ export function KnowledgeDataTable() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns(handleEdit, fetchData).length} className="h-24 text-center">
+                <TableCell colSpan={columns(handleEdit).length} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>

@@ -1,69 +1,64 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import React, { createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
 import type { UserProfile } from '@/types';
+import { useUser, useFirestore, useDoc, useAuth as useFirebaseAuth, useMemoFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 import { Skeleton } from './ui/skeleton';
-
-// A mock function to get user profile, including role.
-// In a real app, this would fetch from Firestore.
-const getMockUserProfile = (user: User): UserProfile => {
-  // For demonstration, we'll assign roles based on email.
-  if (user.email === 'admin@example.com') {
-    return {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName || 'Admin User',
-      role: 'admin',
-    };
-  }
-  return {
-    uid: user.uid,
-    email: user.email,
-    displayName: user.displayName || 'Employee',
-    role: 'member',
-  };
-};
 
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
-  login: (user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user: authUser, isUserLoading: isAuthLoading } = useUser();
+  const firestore = useFirestore();
+  const firebaseAuth = useFirebaseAuth();
+
+  const userDocRef = useMemoFirebase(() => 
+    (firestore && authUser) ? doc(firestore, 'users', authUser.uid) : null, 
+    [firestore, authUser]
+  );
+  
+  const { data: userDoc, isLoading: isDocLoading, error: docError } = useDoc<Partial<Omit<UserProfile, 'uid' | 'email' | 'displayName'>>>(userDocRef);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(firebaseUser => {
-      if (firebaseUser) {
-        // In a real app, you'd fetch the user's profile and role from Firestore here.
-        const userProfile = getMockUserProfile(firebaseUser);
-        setUser(userProfile);
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
+    if (firestore && authUser && !userDoc && !isDocLoading && !docError) {
+      console.log(`Creating user profile for ${authUser.uid}`);
+      const newUserProfile = {
+        email: authUser.email,
+        displayName: authUser.displayName || authUser.email?.split('@')[0],
+        role: authUser.email === 'admin@example.com' ? 'admin' : 'member',
+      };
+      setDoc(doc(firestore, 'users', authUser.uid), newUserProfile, { merge: true });
+    }
+  }, [firestore, authUser, userDoc, isDocLoading, docError]);
 
-    return () => unsubscribe();
-  }, []);
+  const user = useMemo<UserProfile | null>(() => {
+    if (authUser) {
+      return {
+        uid: authUser.uid,
+        email: authUser.email,
+        displayName: authUser.displayName,
+        role: userDoc?.role || 'member', 
+        ...userDoc
+      };
+    }
+    return null;
+  }, [authUser, userDoc]);
+  
+  const loading = isAuthLoading || (!!authUser && isDocLoading);
 
-  const login = (firebaseUser: User) => {
-    const userProfile = getMockUserProfile(firebaseUser);
-    setUser(userProfile);
+  const logout = async () => {
+    await signOut(firebaseAuth);
   };
   
-  const logout = () => {
-    auth.signOut().then(() => setUser(null));
-  };
-
-  const value = { user, loading, login, logout };
+  const value = { user, loading, logout };
 
   if (loading) {
     return (
@@ -76,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       </div>
     )
   }
-
+  
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

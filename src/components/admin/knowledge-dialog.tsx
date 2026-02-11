@@ -21,12 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createItemAction, updateItemAction } from "@/app/admin/actions";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/auth-provider";
+import { useFirestore, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
+import { collection, doc, serverTimestamp } from "firebase/firestore";
 
 interface KnowledgeDialogProps {
   isOpen: boolean;
-  onClose: (refresh: boolean) => void;
+  onClose: () => void;
   item: Knowledge | null;
 }
 
@@ -36,37 +38,59 @@ export function KnowledgeDialog({ isOpen, onClose, item }: KnowledgeDialogProps)
   const [category, setCategory] = useState<Knowledge["category"]>("SOP");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const firestore = useFirestore();
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (item) {
-      setTitle(item.title);
-      setContent(item.content);
-      setCategory(item.category);
-    } else {
-      setTitle("");
-      setContent("");
-      setCategory("SOP");
+    if (isOpen) {
+        if (item) {
+          setTitle(item.title);
+          setContent(item.content);
+          setCategory(item.category);
+        } else {
+          setTitle("");
+          setContent("");
+          setCategory("SOP");
+        }
     }
   }, [item, isOpen]);
 
   const handleSubmit = async () => {
+    if (!firestore || !user) {
+        toast({ variant: "destructive", title: "Error", description: "Not authenticated." });
+        return;
+    }
+
     setLoading(true);
-    const data = { title, content, category };
-    const result = item
-      ? await updateItemAction(item.id, data)
-      : await createItemAction(data);
     
-    setLoading(false);
-    if (result.success) {
-      toast({ title: "Success", description: `Item ${item ? 'updated' : 'created'} successfully.` });
-      onClose(true);
-    } else {
-      toast({ variant: "destructive", title: "Error", description: result.error });
+    const knowledgeData = {
+      title,
+      content,
+      category,
+      authorId: user.uid,
+      updatedAt: serverTimestamp(),
+    };
+
+    try {
+        if (item) {
+          const docRef = doc(firestore, "knowledge", item.id);
+          setDocumentNonBlocking(docRef, knowledgeData, { merge: true });
+        } else {
+          const colRef = collection(firestore, "knowledge");
+          addDocumentNonBlocking(colRef, { ...knowledgeData, createdAt: serverTimestamp() });
+        }
+        
+        toast({ title: "Success", description: `Item ${item ? 'updated' : 'created'} successfully.` });
+        onClose();
+    } catch (error: any) {
+        toast({ variant: "destructive", title: "Error", description: error.message || "An unexpected error occurred." });
+    } finally {
+        setLoading(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose(false)}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="font-headline">
@@ -117,7 +141,7 @@ export function KnowledgeDialog({ isOpen, onClose, item }: KnowledgeDialogProps)
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onClose(false)} disabled={loading}>Cancel</Button>
+          <Button variant="outline" onClick={() => onClose()} disabled={loading}>Cancel</Button>
           <Button onClick={handleSubmit} disabled={loading}>
             {loading ? "Saving..." : "Save changes"}
           </Button>
