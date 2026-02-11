@@ -33,10 +33,11 @@ service cloud.firestore {
     // -------------------------------------------------------------------------
     // Global Knowledge Base
     // Read-only for any authenticated (anonymous) user.
+    // Writable for any authenticated (anonymous) user, as all users are considered admin.
     // -------------------------------------------------------------------------
     match /knowledge/{knowledgeId} {
       allow read: if isSignedIn();
-      allow write: if false;
+      allow write: if isSignedIn();
     }
     
     // -------------------------------------------------------------------------
