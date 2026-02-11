@@ -14,6 +14,8 @@ const categoryColors: Record<Knowledge['category'], string> = {
 };
 
 export function KnowledgeCard({ item }: KnowledgeCardProps) {
+  const date = item.updatedAt?.toDate ? item.updatedAt.toDate() : new Date(item.updatedAt);
+  
   return (
     <Card className="flex flex-col h-full transition-transform transform hover:-translate-y-1 hover:shadow-lg">
       <CardHeader>
@@ -26,7 +28,7 @@ export function KnowledgeCard({ item }: KnowledgeCardProps) {
       <CardContent className="flex-grow"></CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          Updated {formatDistanceToNow(item.updatedAt, { addSuffix: true })}
+          Updated {formatDistanceToNow(date, { addSuffix: true })}
         </p>
       </CardFooter>
     </Card>
