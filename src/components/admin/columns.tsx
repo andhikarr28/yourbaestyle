@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,26 +17,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useFirestore } from "@/firebase";
-import { doc, deleteDoc } from "firebase/firestore";
 
 export const columns = (
-    onEdit: (item: Knowledge) => void
+    onEdit: (item: Knowledge) => void,
+    onDelete: (id: string) => Promise<void>
 ) => {
-  const { toast } = useToast();
-  const firestore = useFirestore();
-    
-  const handleDelete = async (id: string) => {
-    if (!firestore) return;
-    try {
-      await deleteDoc(doc(firestore, "knowledge", id));
-      toast({ title: "Success", description: "Item deleted successfully." });
-      // Real-time listener in data-table will handle UI update.
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Error", description: error.message || "Failed to delete item." });
-    }
-  };
-
   return [
     {
       header: 'Title',
@@ -96,7 +80,7 @@ export const columns = (
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-destructive hover:bg-destructive/90">
+                <AlertDialogAction onClick={() => onDelete(item.id)} className="bg-destructive hover:bg-destructive/90">
                   Delete
                 </AlertDialogAction>
               </AlertDialogFooter>
