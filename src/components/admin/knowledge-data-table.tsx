@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import type { Knowledge } from "@/types";
 import {
   Table,
@@ -17,10 +17,12 @@ import { PlusCircle } from "lucide-react";
 import { columns } from "./columns";
 import { KnowledgeDialog } from "./knowledge-dialog";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy } from "firebase/firestore";
+import { collection, query, orderBy, doc, deleteDoc } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 export function KnowledgeDataTable() {
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [filter, setFilter] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Knowledge | null>(null);
@@ -32,11 +34,21 @@ export function KnowledgeDataTable() {
   
   const { data, isLoading: loading } = useCollection<Knowledge>(knowledgeQuery);
 
-  const handleEdit = (item: Knowledge) => {
+  const handleEdit = useCallback((item: Knowledge) => {
     setEditingItem(item);
     setIsDialogOpen(true);
-  };
+  }, []);
   
+  const handleDelete = useCallback(async (id: string) => {
+    if (!firestore) return;
+    try {
+      await deleteDoc(doc(firestore, "knowledge", id));
+      toast({ title: "Success", description: "Item deleted successfully." });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Error", description: error.message || "Failed to delete item." });
+    }
+  }, [firestore, toast]);
+
   const handleCreate = () => {
     setEditingItem(null);
     setIsDialogOpen(true);
@@ -54,6 +66,8 @@ export function KnowledgeDataTable() {
       item.content.toLowerCase().includes(filter.toLowerCase())
     )
   }, [data, filter]);
+
+  const tableColumns = useMemo(() => columns(handleEdit, handleDelete), [handleEdit, handleDelete]);
 
   return (
     <div className="space-y-4">
@@ -73,7 +87,7 @@ export function KnowledgeDataTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              {columns(handleEdit).map(col => (
+              {tableColumns.map(col => (
                 <TableHead key={col.header}>{col.header}</TableHead>
               ))}
             </TableRow>
@@ -82,7 +96,7 @@ export function KnowledgeDataTable() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {columns(handleEdit).map(col => (
+                  {tableColumns.map(col => (
                     <TableCell key={col.accessor}>
                       <Skeleton className="h-8 w-full" />
                     </TableCell>
@@ -92,7 +106,7 @@ export function KnowledgeDataTable() {
             ) : filteredData.length > 0 ? (
               filteredData.map(item => (
                 <TableRow key={item.id}>
-                  {columns(handleEdit).map(col => (
+                  {tableColumns.map(col => (
                     <TableCell key={col.accessor}>
                       {col.cell(item)}
                     </TableCell>
@@ -101,7 +115,7 @@ export function KnowledgeDataTable() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns(handleEdit).length} className="h-24 text-center">
+                <TableCell colSpan={tableColumns.length} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>
