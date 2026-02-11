@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React from "react";
 import { useAuth } from "@/components/auth-provider";
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
 import { SidebarNav } from "./sidebar-nav";
@@ -9,16 +8,9 @@ import { Header } from "./header";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
 
   if (loading || !user) {
-    // You can render a loading spinner here
+    // Render a loading state while waiting for anonymous user session
     return (
       <div className="flex h-screen items-center justify-center">
         <p>Loading...</p>

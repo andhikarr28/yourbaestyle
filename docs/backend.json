@@ -9,26 +9,10 @@
         "id": {
           "type": "string",
           "description": "Unique identifier for the user."
-        },
-        "email": {
-          "type": "string",
-          "description": "Email address of the user.",
-          "format": "email"
-        },
-        "displayName": {
-          "type": "string",
-          "description": "Display name of the user."
-        },
-        "role": {
-          "type": "string",
-          "description": "Role of the user (e.g., Owner, Admin, Employee)."
         }
       },
       "required": [
-        "id",
-        "email",
-        "displayName",
-        "role"
+        "id"
       ]
     },
     "Knowledge": {
@@ -117,7 +101,6 @@
   },
   "auth": {
     "providers": [
-      "password",
       "anonymous"
     ]
   },
@@ -174,24 +157,8 @@
             }
           ]
         }
-      },
-      {
-        "path": "/roles_admin/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Collection to store admin roles. Existence of a document indicates admin privileges. Used for DBAC.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique ID of the user, matching their Firebase Authentication UID."
-            }
-          ]
-        }
       }
     ],
-    "reasoning": "This Firestore structure is designed to support the YourbAIstyle application, focusing on secure access control, efficient data retrieval, and scalability. It leverages path-based ownership for user-specific data (profiles, chat logs) and a global collection for shared organizational knowledge. Administrative privileges are managed via a dedicated roles collection. This separation ensures both security and scalability."
+    "reasoning": "This Firestore structure is designed to support the YourbAIstyle application, focusing on secure access control, efficient data retrieval, and scalability. It leverages path-based ownership for user-specific data (chat logs) and a global collection for shared organizational knowledge. Authentication is handled anonymously, giving each user a unique ID without requiring a login process."
   }
 }
