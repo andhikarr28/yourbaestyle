@@ -1,16 +1,16 @@
-import AppLayout from "@/components/layout/app-layout";
-import { KnowledgeDataTable } from "@/components/admin/knowledge-data-table";
-import { AdminGate } from "@/components/admin/admin-gate";
+"use client";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.push('/');
+  }, [router]);
+
   return (
-    <AppLayout>
-      <AdminGate>
-        <div className="container mx-auto">
-          <h1 className="text-3xl font-bold font-headline mb-6">Content Management</h1>
-          <KnowledgeDataTable />
-        </div>
-      </AdminGate>
-    </AppLayout>
+    <div className="flex h-screen w-full items-center justify-center">
+      <p>Redirecting...</p>
+    </div>
   );
 }

@@ -1,26 +1,3 @@
-/**
- * Core Philosophy: This ruleset enforces a strict user-ownership model combined with a database-backed administrative role. 
- * Users have full control over their own data subtree (profile, knowledge, chat logs), but cannot access, list, or even 
- * know about the data of other users. A separate 'roles_admin' collection grants read-only administrative access across
- * the entire user data structure for moderation and support purposes.
- *
- * Data Structure: All user-specific data is hierarchically nested under the /users/{userId} path, providing strong
- * structural separation. A top-level collection, /roles_admin, explicitly defines which users have administrative privileges.
- *
- * Key Security Decisions:
- * - Default Deny: All access is denied by default. Rules explicitly grant permissions.
- * - Strict Ownership: All user-generated content is locked to the owner's UID.
- * - Admin Read-Only Access: Admins can read any user's data but cannot write, update, or delete it, preventing impersonation or accidental modification.
- * - No User Listing: Users cannot query the top-level '/users' collection, enhancing privacy.
- * - Secure Admin Management: The '/roles_admin' collection is not writable by any client-side rule, preventing privilege escalation. Admins must be managed server-side or via the Firebase Console.
- *
- * Denormalization for Authorization: To ensure fast and simple rules, authorization data is denormalized. For example, 
- * a 'knowledge' document under a user's path contains an 'authorId'. The rules enforce on creation that this 'authorId' 
- * matches the user's ID from the path, creating a secure and immutable link that doesn't require slow cross-document lookups.
- *
- * Structural Segregation: The use of a nested structure like /users/{userId}/knowledge/{knowledgeId} is a powerful form
- * of segregation. It guarantees that queries for a user's knowledge entries can never accidentally leak data from another user.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -44,65 +21,33 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    /**
-     * Checks if the user is an admin by verifying the existence of their UID
-     * in the roles_admin collection. Costs one read operation.
-     */
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-    }
-
-    /**
-     * Checks if a user is the owner of a resource OR is an admin.
-     * Used for granting read access.
-     */
-    function isOwnerOrAdmin(userId) {
-      return isOwner(userId) || isAdmin();
-    }
-    
     // -------------------------------------------------------------------------
     // User Profiles
+    // User documents are no longer created, but the path is used for subcollections.
+    // Disallow direct access to user documents.
     // -------------------------------------------------------------------------
     match /users/{userId} {
-      allow get: if isOwnerOrAdmin(userId);
-      allow list: if false; // Prevent listing all users for privacy.
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow read, write: if false;
     }
     
     // -------------------------------------------------------------------------
     // Global Knowledge Base
+    // Read-only for any authenticated (anonymous) user.
     // -------------------------------------------------------------------------
     match /knowledge/{knowledgeId} {
-      // Any signed-in user can read the knowledge base.
       allow read: if isSignedIn();
-      // Only the author or an admin can create, update, or delete.
-      allow create: if isOwner(request.resource.data.authorId) || isAdmin();
-      allow update: if isOwner(resource.data.authorId) || isAdmin();
-      allow delete: if isOwner(resource.data.authorId) || isAdmin();
+      allow write: if false;
     }
     
     // -------------------------------------------------------------------------
     // User-Owned Chat Logs
     // -------------------------------------------------------------------------
     match /users/{userId}/chatLogs/{chatLogId} {
-      allow get: if isOwnerOrAdmin(userId);
-      allow list: if isOwnerOrAdmin(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
       allow update: if false; // Chat logs should be immutable.
       allow delete: if isOwner(userId); // Allow owner to delete their logs.
-    }
-    
-    // -------------------------------------------------------------------------
-    // Admin Roles
-    // -------------------------------------------------------------------------
-    match /roles_admin/{userId} {
-      allow get: if isSignedIn();
-      allow list: if isAdmin();
-      allow create: if false; // Must be managed server-side
-      allow update: if false; // Must be managed server-side
-      allow delete: if false; // Must be managed server-side
     }
   }
 }

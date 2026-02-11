@@ -1,6 +1,4 @@
-import { useAuth } from '@/components/auth-provider';
-
 export function useIsAdmin() {
-  const { user } = useAuth();
-  return user?.role === 'admin';
+  // With anonymous login, there is no concept of an admin role from the client.
+  return false;
 }

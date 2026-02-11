@@ -1,15 +1,16 @@
-import LoginForm from "@/components/login-form";
-import { Logo } from "@/components/logo";
+"use client";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.push('/');
+  }, [router]);
+  
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex justify-center">
-          <Logo />
-        </div>
-        <LoginForm />
-      </div>
+    <div className="flex h-screen w-full items-center justify-center">
+      <p>Redirecting...</p>
     </div>
   );
 }
