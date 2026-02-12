@@ -12,13 +12,13 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase";
 import { collection, serverTimestamp, query } from "firebase/firestore";
+import { useChat } from "./chat-provider";
 
 export default function ChatView() {
   const { user } = useAuth();
   const firestore = useFirestore();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { messages, setMessages, isLoading, setIsLoading } = useChat();
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Fetch all knowledge base articles
