@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // Helper Functions
+    // -------------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Function to get the user's role from their profile document
+    function getUserRole(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    }
+
+    // Function to check if the current user is an Admin
+    function isAdmin() {
+      return isSignedIn() && getUserRole(request.auth.uid) == 'Admin';
+    }
+    
+    // -------------------------------------------------------------------------
+    // User Profiles
+    // -------------------------------------------------------------------------
+    match /users/{userId} {
+      // Allow users to read their own profile
+      allow get: if isOwner(userId);
+      
+      // Allow users to create their own profile upon signup
+      allow create: if isOwner(userId);
+      
+      // Allow users to update their profile, but NOT their role
+      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
+      
+      // Disallow deleting user profiles
+      allow delete: if false;
+    }
+    
+    // -------------------------------------------------------------------------
+    // Global Knowledge Base
+    // -------------------------------------------------------------------------
+    match /knowledge/{knowledgeId} {
+      // Allow any signed-in user to read knowledge
+      allow read: if isSignedIn();
+      
+      // Only allow Admins to create, update, or delete knowledge
+      allow write: if isAdmin();
+    }
+  }
+}

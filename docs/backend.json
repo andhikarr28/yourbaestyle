@@ -1,0 +1,127 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the YourbAIstyle application.",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique identifier for the user, matching Firebase Auth UID."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role in the application.",
+          "enum": [
+            "Admin",
+            "Pegawai"
+          ]
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "role"
+      ]
+    },
+    "Knowledge": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Knowledge",
+      "type": "object",
+      "description": "Represents a piece of organizational knowledge (SOP, product knowledge, tacit knowledge).",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the knowledge entry."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of knowledge (e.g., SOP, product knowledge, tacit knowledge)."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the knowledge entry."
+        },
+        "content": {
+          "type": "string",
+          "description": "Content of the knowledge entry (e.g., text, link)."
+        },
+        "authorId": {
+          "type": "string",
+          "description": "Reference to the User who created the knowledge entry. (Relationship: User 1:N Knowledge)"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the knowledge entry was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of when the knowledge entry was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "title",
+        "content",
+        "authorId",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "email-password"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles, including their role. Path-based ownership ensures only the user can read their own profile, but role changes are restricted.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique ID of the user, matching their Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/knowledge/{knowledgeId}",
+        "definition": {
+          "entityName": "Knowledge",
+          "schema": {
+            "$ref": "#/backend/entities/Knowledge"
+          },
+          "description": "Stores all knowledge entries. Read-only for all authenticated users, but only writable by Admins.",
+          "params": [
+            {
+              "name": "knowledgeId",
+              "description": "The unique ID of the knowledge document."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure is designed to support the YourbAIstyle application, focusing on secure, role-based access control. User profiles with roles are stored in a top-level 'users' collection. A global 'knowledge' collection is readable by all but only writable by admins."
+  }
+}
