@@ -117,10 +117,6 @@ export default function LoginForm() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
           </Button>
-          <div className="text-center text-xs text-muted-foreground pt-2 space-y-1">
-            <p>Use <code className="bg-muted p-1 rounded-sm">pegawai@gmail.com</code> / <code className="bg-muted p-1 rounded-sm">pegawai123</code></p>
-            <p>or <code className="bg-muted p-1 rounded-sm">admin@gmail.com</code> / <code className="bg-muted p-1 rounded-sm">admin123</code></p>
-          </div>
         </form>
       </CardContent>
     </Card>
