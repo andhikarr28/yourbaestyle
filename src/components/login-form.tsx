@@ -84,7 +84,7 @@ export default function LoginForm() {
         <CardDescription>Enter your credentials to access your account. New accounts will be created automatically.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleLoginOrSignup} className="space-y-4">
+        <form onSubmit={handleLoginOrSignup} className="space-y-4" autoComplete="off">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -94,6 +94,7 @@ export default function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="off"
             />
           </div>
           <div className="space-y-2">
@@ -105,6 +106,7 @@ export default function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
+              autoComplete="new-password"
             />
           </div>
           {error && (
