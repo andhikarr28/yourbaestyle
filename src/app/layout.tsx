@@ -3,6 +3,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
+import { ChatProvider } from "@/components/chat/chat-provider";
 
 export const metadata: Metadata = {
   title: "YourbAIstyle",
@@ -23,7 +24,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <ChatProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </ChatProvider>
           <Toaster />
         </FirebaseClientProvider>
       </body>
