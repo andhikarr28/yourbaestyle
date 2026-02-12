@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChatbotInteraction } from "@/types";
+import type { Knowledge } from "@/types";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,31 +20,31 @@ import {
 
 export const columns = (
     isAdmin: boolean,
-    onEdit: (item: ChatbotInteraction) => void,
+    onEdit: (item: Knowledge) => void,
     onDelete: (id: string) => Promise<void>
 ) => {
   const baseColumns = [
     {
-      header: 'Question',
-      accessor: 'question',
-      cell: (item: ChatbotInteraction) => <div className="font-medium line-clamp-2">{item.question}</div>
+      header: 'Title',
+      accessor: 'title',
+      cell: (item: Knowledge) => <div className="font-medium line-clamp-2">{item.title}</div>
     },
     {
-      header: 'Answer',
-      accessor: 'answer',
-      cell: (item: ChatbotInteraction) => <div className="text-sm text-muted-foreground line-clamp-2">{item.answer}</div>
+      header: 'Content',
+      accessor: 'content',
+      cell: (item: Knowledge) => <div className="text-sm text-muted-foreground line-clamp-2">{item.content}</div>
     },
     {
       header: 'Category',
       accessor: 'category',
-      cell: (item: ChatbotInteraction) => <Badge variant="secondary">{item.category}</Badge>
+      cell: (item: Knowledge) => <Badge variant="secondary">{item.category}</Badge>
     },
     {
-      header: 'Created At',
-      accessor: 'createdAt',
-      cell: (item: ChatbotInteraction) => {
-        if (!item.createdAt) return null;
-        const date = item.createdAt?.toDate ? item.createdAt.toDate() : new Date(item.createdAt);
+      header: 'Last Updated',
+      accessor: 'updatedAt',
+      cell: (item: Knowledge) => {
+        if (!item.updatedAt) return null;
+        const date = item.updatedAt?.toDate ? item.updatedAt.toDate() : new Date(item.updatedAt);
         return <div className="text-sm">{format(date, 'PPp')}</div>
       }
     },
@@ -56,7 +56,7 @@ export const columns = (
         {
           header: 'Actions',
           accessor: 'actions',
-          cell: (item: ChatbotInteraction) => (
+          cell: (item: Knowledge) => (
             <AlertDialog>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -82,7 +82,7 @@ export const columns = (
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete the Q&A item.
+                      This action cannot be undone. This will permanently delete this knowledge item.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

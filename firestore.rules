@@ -51,19 +51,5 @@ service cloud.firestore {
       // Only allow Admins to create, update, or delete knowledge
       allow write: if isAdmin();
     }
-    
-    // -------------------------------------------------------------------------
-    // Stored Chatbot Interactions (for Quick Questions)
-    // -------------------------------------------------------------------------
-    match /chatbotInteractions/{interactionId} {
-      // Any signed-in user can read the questions for the 'Quick Question' list
-      allow read: if isSignedIn();
-      
-      // Allow any signed-in user to create a new interaction when asking a new question
-      allow create: if isSignedIn();
-      
-      // Only allow Admins to update or delete existing interactions
-      allow update, delete: if isAdmin();
-    }
   }
 }
