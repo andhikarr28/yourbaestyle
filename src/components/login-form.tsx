@@ -8,26 +8,58 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { useAuth as useFirebaseAuth } from "@/firebase";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { useFirestore, useAuth as useFirebaseAuth, setDocumentNonBlocking } from "@/firebase";
+import { doc } from "firebase/firestore";
 
 export default function LoginForm() {
-  const [email, setEmail] = useState("employee@example.com");
-  const [password, setPassword] = useState("password");
+  const [email, setEmail] = useState("pegawai@gmail.com");
+  const [password, setPassword] = useState("pegawai123");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const auth = useFirebaseAuth();
+  const firestore = useFirestore();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLoginOrSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    if (!auth || !firestore) return;
+
     try {
+      // First, try to sign in
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (signInError: any) {
+      // If user does not exist, try to sign them up
+      if (signInError.code === 'auth/user-not-found') {
+        try {
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          const user = userCredential.user;
+
+          // Determine role based on email for the two test accounts
+          const role = email === 'admin@gmail.com' ? 'Admin' : 'Pegawai';
+
+          // Create user profile in Firestore
+          const userDocRef = doc(firestore, "users", user.uid);
+          const userProfile = {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            role: role,
+          };
+          
+          setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+
+          router.push("/");
+        } catch (signUpError: any) {
+          setError(signUpError.message);
+        }
+      } else {
+        // Handle other sign-in errors
+        setError(signInError.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -37,16 +69,16 @@ export default function LoginForm() {
     <Card>
       <CardHeader>
         <CardTitle className="font-headline text-2xl">Login</CardTitle>
-        <CardDescription>Enter your credentials to access your account.</CardDescription>
+        <CardDescription>Enter your credentials to access your account. New accounts will be created automatically.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLoginOrSignup} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
-              placeholder="employee@example.com"
+              placeholder="pegawai@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -70,10 +102,11 @@ export default function LoginForm() {
             </Alert>
           )}
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Logging in..." : "Login / Sign Up"}
           </Button>
-          <div className="text-center text-xs text-muted-foreground pt-2">
-            <p>Hint: Use admin@example.com or employee@example.com with password 'password'.</p>
+          <div className="text-center text-xs text-muted-foreground pt-2 space-y-1">
+            <p>Use <code className="bg-muted p-1 rounded-sm">pegawai@gmail.com</code> / <code className="bg-muted p-1 rounded-sm">pegawai123</code></p>
+            <p>or <code className="bg-muted p-1 rounded-sm">admin@gmail.com</code> / <code className="bg-muted p-1 rounded-sm">admin123</code></p>
           </div>
         </form>
       </CardContent>

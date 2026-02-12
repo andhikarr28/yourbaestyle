@@ -1,5 +1,8 @@
+"use client";
+
+import { useAuth } from "@/components/auth-provider";
+
 export function useIsAdmin() {
-  // For this internal app, we'll consider all users as admins
-  // to allow access to the knowledge management page.
-  return true;
+  const { user } = useAuth();
+  return user?.role === "Admin";
 }

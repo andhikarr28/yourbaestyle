@@ -10,10 +10,10 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getRelevantKnowledge } from '@/services/knowledge-service';
 
 const ChatbotAnswersQuestionsInputSchema = z.object({
   question: z.string().describe('The question asked by the employee in Bahasa Indonesia.'),
+  knowledge: z.string().describe('A collection of knowledge base articles to reference.'),
 });
 export type ChatbotAnswersQuestionsInput = z.infer<typeof ChatbotAnswersQuestionsInputSchema>;
 
@@ -35,7 +35,7 @@ const prompt = ai.definePrompt({
   Jika pertanyaan berada di luar basis pengetahuan, jawab dengan sopan bahwa Anda tidak memiliki informasi yang relevan.
 
   Berikut adalah basis pengetahuan yang disetujui:
-  {{knowledge}}
+  {{{knowledge}}}
 
   Pertanyaan: {{{question}}}
 
@@ -49,11 +49,7 @@ const chatbotAnswersQuestionsFlow = ai.defineFlow(
     outputSchema: ChatbotAnswersQuestionsOutputSchema,
   },
   async input => {
-    const knowledge = await getRelevantKnowledge(input.question);
-    const {output} = await prompt({
-      ...input,
-      knowledge,
-    });
+    const {output} = await prompt(input);
     return output!;
   }
 );
