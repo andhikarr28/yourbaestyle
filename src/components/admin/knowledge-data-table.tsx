@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import type { Knowledge } from "@/types";
+import type { ChatbotInteraction } from "@/types";
 import {
   Table,
   TableBody,
@@ -27,16 +27,16 @@ export function KnowledgeDataTable() {
   const { toast } = useToast();
   const [filter, setFilter] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<Knowledge | null>(null);
+  const [editingItem, setEditingItem] = useState<ChatbotInteraction | null>(null);
 
-  const knowledgeQuery = useMemoFirebase(() => 
-    firestore ? query(collection(firestore, 'knowledge'), orderBy('updatedAt', 'desc')) : null,
+  const interactionQuery = useMemoFirebase(() => 
+    firestore ? query(collection(firestore, 'chatbotInteractions'), orderBy('createdAt', 'desc')) : null,
     [firestore]
   );
   
-  const { data, isLoading: loading } = useCollection<Knowledge>(knowledgeQuery);
+  const { data, isLoading: loading } = useCollection<ChatbotInteraction>(interactionQuery);
 
-  const handleEdit = useCallback((item: Knowledge) => {
+  const handleEdit = useCallback((item: ChatbotInteraction) => {
     setEditingItem(item);
     setIsDialogOpen(true);
   }, []);
@@ -44,7 +44,7 @@ export function KnowledgeDataTable() {
   const handleDelete = useCallback(async (id: string) => {
     if (!firestore) return;
     try {
-      await deleteDoc(doc(firestore, "knowledge", id));
+      await deleteDoc(doc(firestore, "chatbotInteractions", id));
       toast({ title: "Success", description: "Item deleted successfully." });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Error", description: error.message || "Failed to delete item." });
@@ -64,8 +64,8 @@ export function KnowledgeDataTable() {
   const filteredData = useMemo(() => {
     if (!data) return [];
     return data.filter(item =>
-      item.title.toLowerCase().includes(filter.toLowerCase()) ||
-      item.content.toLowerCase().includes(filter.toLowerCase())
+      item.question.toLowerCase().includes(filter.toLowerCase()) ||
+      item.answer.toLowerCase().includes(filter.toLowerCase())
     )
   }, [data, filter]);
 
@@ -75,7 +75,7 @@ export function KnowledgeDataTable() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <Input
-          placeholder="Filter knowledge..."
+          placeholder="Filter Q&A..."
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           className="max-w-sm"

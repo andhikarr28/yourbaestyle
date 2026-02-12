@@ -53,14 +53,17 @@ service cloud.firestore {
     }
     
     // -------------------------------------------------------------------------
-    // User-Owned Chat Logs
+    // Stored Chatbot Interactions (for Quick Questions)
     // -------------------------------------------------------------------------
-    match /users/{userId}/chatLogs/{chatLogId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if false; // Chat logs should be immutable.
-      allow delete: if isOwner(userId); // Allow owner to delete their logs.
+    match /chatbotInteractions/{interactionId} {
+      // Any signed-in user can read the questions for the 'Quick Question' list
+      allow read: if isSignedIn();
+      
+      // Allow any signed-in user to create a new interaction when asking a new question
+      allow create: if isSignedIn();
+      
+      // Only allow Admins to update or delete existing interactions
+      allow update, delete: if isAdmin();
     }
   }
 }

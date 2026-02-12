@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Knowledge } from "@/types";
+import type { ChatbotInteraction } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,65 +22,62 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/components/auth-provider";
 import { useFirestore, addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
 import { collection, doc, serverTimestamp } from "firebase/firestore";
 
 interface KnowledgeDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  item: Knowledge | null;
+  item: ChatbotInteraction | null;
 }
 
 export function KnowledgeDialog({ isOpen, onClose, item }: KnowledgeDialogProps) {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [category, setCategory] = useState<Knowledge["category"]>("SOP");
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [category, setCategory] = useState<ChatbotInteraction["category"]>("SOP");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
-  const { user } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
         if (item) {
-          setTitle(item.title);
-          setContent(item.content);
+          setQuestion(item.question);
+          setAnswer(item.answer);
           setCategory(item.category);
         } else {
-          setTitle("");
-          setContent("");
+          setQuestion("");
+          setAnswer("");
           setCategory("SOP");
         }
     }
   }, [item, isOpen]);
 
   const handleSubmit = async () => {
-    if (!firestore || !user) {
-        toast({ variant: "destructive", title: "Error", description: "Not authenticated." });
+    if (!firestore) {
+        toast({ variant: "destructive", title: "Error", description: "Firestore not available." });
         return;
     }
 
     setLoading(true);
     
-    const knowledgeData = {
-      title,
-      content,
+    const interactionData = {
+      question,
+      answer,
       category,
-      authorId: user.uid,
       updatedAt: serverTimestamp(),
     };
 
     try {
         if (item) {
-          const docRef = doc(firestore, "knowledge", item.id);
-          setDocumentNonBlocking(docRef, knowledgeData, { merge: true });
+          const docRef = doc(firestore, "chatbotInteractions", item.id);
+          setDocumentNonBlocking(docRef, interactionData, { merge: true });
         } else {
-          const colRef = collection(firestore, "knowledge");
-          addDocumentNonBlocking(colRef, { ...knowledgeData, createdAt: serverTimestamp() });
+          const colRef = collection(firestore, "chatbotInteractions");
+          addDocumentNonBlocking(colRef, { ...interactionData, createdAt: serverTimestamp() });
         }
         
-        toast({ title: "Success", description: `Item ${item ? 'updated' : 'created'} successfully.` });
+        toast({ title: "Success", description: `Q&A item ${item ? 'updated' : 'created'} successfully.` });
         onClose();
     } catch (error: any) {
         toast({ variant: "destructive", title: "Error", description: error.message || "An unexpected error occurred." });
@@ -91,32 +88,45 @@ export function KnowledgeDialog({ isOpen, onClose, item }: KnowledgeDialogProps)
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-headline">
-            {item ? "Edit Knowledge Item" : "Create Knowledge Item"}
+            {item ? "Edit Q&A Item" : "Create Q&A Item"}
           </DialogTitle>
           <DialogDescription>
-            {item ? "Update the details of the knowledge item." : "Add a new item to the knowledge base."}
+            {item ? "Update the details of the stored Q&A." : "Add a new question and answer to the chatbot memory."}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="title" className="text-right">
-              Title
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="question" className="text-right pt-2">
+              Question
             </Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+            <Textarea
+              id="question"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
               className="col-span-3"
+              rows={3}
+            />
+          </div>
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="answer" className="text-right pt-2">
+              Answer
+            </Label>
+            <Textarea
+              id="answer"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              className="col-span-3"
+              rows={5}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="category" className="text-right">
               Category
             </Label>
-            <Select value={category} onValueChange={(value) => setCategory(value as Knowledge["category"])}>
+            <Select value={category} onValueChange={(value) => setCategory(value as ChatbotInteraction["category"])}>
                 <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
@@ -126,18 +136,6 @@ export function KnowledgeDialog({ isOpen, onClose, item }: KnowledgeDialogProps)
                     <SelectItem value="Tacit">Tacit</SelectItem>
                 </SelectContent>
             </Select>
-          </div>
-          <div className="grid grid-cols-4 items-start gap-4">
-            <Label htmlFor="content" className="text-right pt-2">
-              Content
-            </Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="col-span-3"
-              rows={5}
-            />
           </div>
         </div>
         <DialogFooter>
