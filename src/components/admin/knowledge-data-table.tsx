@@ -16,8 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PlusCircle } from "lucide-react";
 import { columns } from "./columns";
 import { KnowledgeDialog } from "./knowledge-dialog";
-import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from "@/firebase";
-import { collection, query, orderBy, doc } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase, errorEmitter, FirestorePermissionError } from "@/firebase";
+import { collection, query, orderBy, doc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 
@@ -41,11 +41,25 @@ export function KnowledgeDataTable() {
     setIsDialogOpen(true);
   }, []);
   
-  const handleDelete = useCallback((id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     if (!firestore) return;
     const docRef = doc(firestore, "knowledge", id);
-    deleteDocumentNonBlocking(docRef);
-    toast({ title: "Success", description: "Item deleted successfully." });
+    try {
+        await deleteDoc(docRef);
+        toast({ title: "Success", description: "Item deleted successfully." });
+    } catch (error) {
+        console.error("Error deleting document:", error);
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        toast({
+            variant: "destructive",
+            title: "Uh oh! Something went wrong.",
+            description: "Could not delete the item. Please check your permissions or try again."
+        });
+    }
   }, [firestore, toast]);
 
   const handleCreate = () => {

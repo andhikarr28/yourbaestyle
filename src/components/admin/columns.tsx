@@ -21,7 +21,7 @@ import {
 export const columns = (
     isAdmin: boolean,
     onEdit: (item: Knowledge) => void,
-    onDelete: (id: string) => void
+    onDelete: (id: string) => Promise<void>
 ) => {
   const baseColumns = [
     {
