@@ -19,9 +19,11 @@ import { KnowledgeDialog } from "./knowledge-dialog";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, orderBy, doc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 export function KnowledgeDataTable() {
   const firestore = useFirestore();
+  const isAdmin = useIsAdmin();
   const { toast } = useToast();
   const [filter, setFilter] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -67,7 +69,7 @@ export function KnowledgeDataTable() {
     )
   }, [data, filter]);
 
-  const tableColumns = useMemo(() => columns(handleEdit, handleDelete), [handleEdit, handleDelete]);
+  const tableColumns = useMemo(() => columns(isAdmin, handleEdit, handleDelete), [isAdmin, handleEdit, handleDelete]);
 
   return (
     <div className="space-y-4">
@@ -78,10 +80,12 @@ export function KnowledgeDataTable() {
           onChange={(e) => setFilter(e.target.value)}
           className="max-w-sm"
         />
-        <Button onClick={handleCreate}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add New
-        </Button>
+        {isAdmin && (
+          <Button onClick={handleCreate}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add New
+          </Button>
+        )}
       </div>
       <div className="rounded-md border bg-card">
         <Table>

@@ -6,13 +6,29 @@
       "type": "object",
       "description": "Represents a user of the YourbAIstyle application.",
       "properties": {
-        "id": {
+        "uid": {
           "type": "string",
-          "description": "Unique identifier for the user."
+          "description": "Unique identifier for the user, matching Firebase Auth UID."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The user's email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role in the application.",
+          "enum": ["Admin", "Pegawai"]
         }
       },
       "required": [
-        "id"
+        "uid",
+        "email",
+        "role"
       ]
     },
     "Knowledge": {
@@ -101,7 +117,7 @@
   },
   "auth": {
     "providers": [
-      "anonymous"
+      "email-password"
     ]
   },
   "firestore": {
@@ -113,7 +129,7 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profiles. Path-based ownership ensures only the user can access their own profile.",
+          "description": "Stores user profiles, including their role. Path-based ownership ensures only the user can read their own profile, but role changes are restricted.",
           "params": [
             {
               "name": "userId",
@@ -129,7 +145,7 @@
           "schema": {
             "$ref": "#/backend/entities/Knowledge"
           },
-          "description": "Stores all knowledge entries for the organization.",
+          "description": "Stores all knowledge entries. Read-only for all authenticated users, but only writable by Admins.",
           "params": [
             {
               "name": "knowledgeId",
@@ -159,6 +175,6 @@
         }
       }
     ],
-    "reasoning": "This Firestore structure is designed to support the YourbAIstyle application, focusing on secure access control, efficient data retrieval, and scalability. It leverages path-based ownership for user-specific data (chat logs) and a global collection for shared organizational knowledge. Authentication is handled anonymously, giving each user a unique ID without requiring a login process."
+    "reasoning": "This Firestore structure is designed to support the YourbAIstyle application, focusing on secure, role-based access control. User profiles with roles are stored in a top-level 'users' collection. A global 'knowledge' collection is readable by all but only writable by admins. User-specific chat logs are nested within user documents to enforce privacy."
   }
 }

@@ -26,6 +26,7 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
         requestResourceData: data,
       })
     )
+    throw error;
   })
   // Execution continues immediately
 }
@@ -47,6 +48,7 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
           requestResourceData: data,
         })
       )
+      throw error;
     });
   return promise;
 }
@@ -67,6 +69,7 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
           requestResourceData: data,
         })
       )
+      throw error;
     });
 }
 
@@ -85,5 +88,6 @@ export function deleteDocumentNonBlocking(docRef: DocumentReference) {
           operation: 'delete',
         })
       )
+      throw error;
     });
 }

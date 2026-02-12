@@ -1,22 +1,11 @@
 "use client";
 
 import React from "react";
-import { useAuth } from "@/components/auth-provider";
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
 import { SidebarNav } from "./sidebar-nav";
 import { Header } from "./header";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-
-  if (loading || !user) {
-    // Render a loading state while waiting for anonymous user session
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
 
   return (
     <SidebarProvider>

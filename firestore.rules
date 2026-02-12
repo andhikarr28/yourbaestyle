@@ -6,38 +6,50 @@ service cloud.firestore {
     // Helper Functions
     // -------------------------------------------------------------------------
 
-    /**
-     * Checks if the user is authenticated.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the requesting user's UID matches the provided userId.
-     * This is the foundation of the ownership model.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Function to get the user's role from their profile document
+    function getUserRole(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role;
+    }
+
+    // Function to check if the current user is an Admin
+    function isAdmin() {
+      return isSignedIn() && getUserRole(request.auth.uid) == 'Admin';
     }
     
     // -------------------------------------------------------------------------
     // User Profiles
-    // User documents are no longer created, but the path is used for subcollections.
-    // Disallow direct access to user documents.
     // -------------------------------------------------------------------------
     match /users/{userId} {
-      allow read, write: if false;
+      // Allow users to read their own profile
+      allow get: if isOwner(userId);
+      
+      // Allow users to create their own profile upon signup
+      allow create: if isOwner(userId);
+      
+      // Allow users to update their profile, but NOT their role
+      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
+      
+      // Disallow deleting user profiles
+      allow delete: if false;
     }
     
     // -------------------------------------------------------------------------
     // Global Knowledge Base
-    // Read-only for any authenticated (anonymous) user.
-    // Writable for any authenticated (anonymous) user, as all users are considered admin.
     // -------------------------------------------------------------------------
     match /knowledge/{knowledgeId} {
+      // Allow any signed-in user to read knowledge
       allow read: if isSignedIn();
-      allow write: if isSignedIn();
+      
+      // Only allow Admins to create, update, or delete knowledge
+      allow write: if isAdmin();
     }
     
     // -------------------------------------------------------------------------
