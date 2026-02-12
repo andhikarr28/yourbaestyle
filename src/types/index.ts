@@ -20,3 +20,11 @@ export type ChatMessage = {
   role: 'user' | 'assistant';
   content: string;
 };
+
+export type ChatbotInteraction = {
+  id: string;
+  question: string;
+  answer: string;
+  category: 'SOP' | 'Product' | 'Tacit';
+  createdAt: any; // Firestore Timestamp
+};

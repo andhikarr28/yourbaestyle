@@ -7,9 +7,9 @@ export default function AdminPage() {
     <AppLayout>
       <AdminGate>
         <div className="container mx-auto">
-          <h1 className="text-3xl font-bold font-headline mb-6">Knowledge Management</h1>
+          <h1 className="text-3xl font-bold font-headline mb-6">Chatbot Q&A Management</h1>
           <p className="text-muted-foreground mb-6">
-            Create, edit, and manage knowledge base articles for the YourbAIstyle chatbot.
+            Create, edit, and manage the stored questions and answers for the YourbAIstyle chatbot.
           </p>
           <KnowledgeDataTable />
         </div>

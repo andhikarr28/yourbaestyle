@@ -19,6 +19,7 @@ export type ChatbotAnswersQuestionsInput = z.infer<typeof ChatbotAnswersQuestion
 
 const ChatbotAnswersQuestionsOutputSchema = z.object({
   answer: z.string().describe('The answer to the question in Bahasa Indonesia.'),
+  category: z.enum(['SOP', 'Product', 'Tacit']).describe('The category of the question.'),
 });
 export type ChatbotAnswersQuestionsOutput = z.infer<typeof ChatbotAnswersQuestionsOutputSchema>;
 
@@ -32,14 +33,14 @@ const prompt = ai.definePrompt({
   output: {schema: ChatbotAnswersQuestionsOutputSchema},
   prompt: `Anda adalah chatbot AI yang membantu karyawan dengan menjawab pertanyaan dalam Bahasa Indonesia.
   Anda hanya boleh menjawab pertanyaan berdasarkan informasi yang diberikan dalam basis pengetahuan yang disetujui.
-  Jika pertanyaan berada di luar basis pengetahuan, jawab dengan sopan bahwa Anda tidak memiliki informasi yang relevan.
+  Berdasarkan pertanyaan dan pengetahuan yang diberikan, klasifikasikan pertanyaan tersebut ke dalam salah satu kategori berikut: 'SOP', 'Product', atau 'Tacit'.
+  Jika pertanyaan berada di luar basis pengetahuan atau tidak ada informasi yang relevan, jawab dengan "Informasi belum tersedia. Silakan hubungi admin." dan klasifikasikan kategori sebagai 'Tacit'.
 
   Berikut adalah basis pengetahuan yang disetujui:
   {{{knowledge}}}
 
   Pertanyaan: {{{question}}}
-
-  Jawaban: `,
+`,
 });
 
 const chatbotAnswersQuestionsFlow = ai.defineFlow(
