@@ -100,11 +100,11 @@ export default function LoginForm() {
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
-              type="password"
+              type="text"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="••••••••"
+              placeholder="Password"
             />
           </div>
           {error && (
