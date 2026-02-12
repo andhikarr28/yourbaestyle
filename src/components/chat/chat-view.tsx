@@ -6,7 +6,7 @@ import { useAuth } from "@/components/auth-provider";
 import { type ChatMessage, type Knowledge } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { SendHorizonal, Bot, HelpCircle } from "lucide-react";
+import { SendHorizontal, Bot, HelpCircle } from "lucide-react";
 import { ChatMessageBubble } from "./chat-message";
 import { ScrollArea } from "../ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -44,7 +44,7 @@ export default function ChatView() {
         });
       }, 100);
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,10 +106,10 @@ export default function ChatView() {
               YourbAIstyle Chat
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-grow flex flex-col p-0">
+          <CardContent className="flex-grow flex flex-col p-0 min-h-0">
             <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
               <div className="space-y-4">
-                {messages.length === 0 && (
+                {messages.length === 0 && !isLoading && (
                   <div className="text-center text-muted-foreground p-8 flex flex-col items-center justify-center h-full">
                       <HelpCircle className="mx-auto h-12 w-12" />
                       <h2 className="mt-4 text-lg font-medium">Selamat Datang!</h2>
@@ -147,7 +147,7 @@ export default function ChatView() {
                   rows={1}
                 />
                 <Button type="submit" disabled={isLoading || !input.trim()} size="icon">
-                  <SendHorizonal />
+                  <SendHorizontal />
                   <span className="sr-only">Send</span>
                 </Button>
               </form>
