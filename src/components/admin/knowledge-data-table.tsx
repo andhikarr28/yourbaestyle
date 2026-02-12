@@ -16,8 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PlusCircle } from "lucide-react";
 import { columns } from "./columns";
 import { KnowledgeDialog } from "./knowledge-dialog";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, doc, deleteDoc } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase, deleteDocumentNonBlocking } from "@/firebase";
+import { collection, query, orderBy, doc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 
@@ -41,14 +41,11 @@ export function KnowledgeDataTable() {
     setIsDialogOpen(true);
   }, []);
   
-  const handleDelete = useCallback(async (id: string) => {
+  const handleDelete = useCallback((id: string) => {
     if (!firestore) return;
-    try {
-      await deleteDoc(doc(firestore, "knowledge", id));
-      toast({ title: "Success", description: "Item deleted successfully." });
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Error", description: error.message || "Failed to delete item." });
-    }
+    const docRef = doc(firestore, "knowledge", id);
+    deleteDocumentNonBlocking(docRef);
+    toast({ title: "Success", description: "Item deleted successfully." });
   }, [firestore, toast]);
 
   const handleCreate = () => {
