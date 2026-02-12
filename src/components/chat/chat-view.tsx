@@ -1,19 +1,18 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { chatbotAnswersQuestions } from "@/ai/flows/chatbot-answers-questions";
+import { chatbotAnswersQuestions, type ChatbotAnswersQuestionsOutput } from "@/ai/flows/chatbot-answers-questions";
 import { useAuth } from "@/components/auth-provider";
-import { type ChatMessage, type Knowledge, type ChatbotInteraction } from "@/types";
+import { type ChatMessage, type Knowledge } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { SendHorizonal, Bot, HelpCircle } from "lucide-react";
 import { ChatMessageBubble } from "./chat-message";
 import { ScrollArea } from "../ui/scroll-area";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { useFirestore, addDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, serverTimestamp, query, orderBy } from "firebase/firestore";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query } from "firebase/firestore";
 import { useChat } from "./chat-provider";
-import { Skeleton } from "../ui/skeleton";
 
 export default function ChatView() {
   const { user } = useAuth();
@@ -29,13 +28,6 @@ export default function ChatView() {
   );
   const { data: knowledgeData } = useCollection<Knowledge>(knowledgeQuery);
 
-  // Fetch stored chatbot interactions for "Quick Question" mode
-  const interactionsQuery = useMemoFirebase(() =>
-    firestore ? query(collection(firestore, 'chatbotInteractions'), orderBy('createdAt', 'desc')) : null,
-    [firestore]
-  );
-  const { data: interactionsData, isLoading: interactionsLoading } = useCollection<ChatbotInteraction>(interactionsQuery);
-
   const knowledgeBase = useMemo(() => {
     if (!knowledgeData) return "";
     return knowledgeData
@@ -45,7 +37,6 @@ export default function ChatView() {
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-      // Use setTimeout to make sure scroll happens after DOM update
       setTimeout(() => {
         scrollAreaRef.current?.scrollTo({
           top: scrollAreaRef.current.scrollHeight,
@@ -54,20 +45,6 @@ export default function ChatView() {
       }, 100);
     }
   }, [messages]);
-  
-  const handleQuickQuestion = (interaction: ChatbotInteraction) => {
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: "user",
-      content: interaction.question,
-    };
-    const aiMessage: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      role: "assistant",
-      content: interaction.answer,
-    };
-    setMessages([userMessage, aiMessage]);
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,10 +72,11 @@ export default function ChatView() {
         return;
       }
       
-      const { answer, category } = await chatbotAnswersQuestions({ 
+      const { answer }: ChatbotAnswersQuestionsOutput = await chatbotAnswersQuestions({ 
         question: currentInput,
         knowledge: knowledgeBase,
       });
+
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -106,17 +84,6 @@ export default function ChatView() {
       };
       setMessages((prev) => [...prev, aiMessage]);
       
-      // Save the new interaction to Firestore if the answer is not the "not found" message
-      if (firestore && answer !== "Informasi belum tersedia. Silakan hubungi admin.") {
-          const interactionRef = collection(firestore, 'chatbotInteractions');
-          const newInteraction: Omit<ChatbotInteraction, 'id'> = {
-              question: currentInput,
-              answer: answer,
-              category: category,
-              createdAt: serverTimestamp(),
-          };
-          addDocumentNonBlocking(interactionRef, newInteraction);
-      }
     } catch (error) {
       console.error("Error getting AI response:", error);
       const errorMessage: ChatMessage = {
@@ -131,8 +98,7 @@ export default function ChatView() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
-      <div className="lg:col-span-2 h-full">
+    <div className="h-full">
         <Card className="h-full flex flex-col">
           <CardHeader>
             <CardTitle className="font-headline text-xl flex items-center gap-2">
@@ -147,7 +113,7 @@ export default function ChatView() {
                   <div className="text-center text-muted-foreground p-8 flex flex-col items-center justify-center h-full">
                       <HelpCircle className="mx-auto h-12 w-12" />
                       <h2 className="mt-4 text-lg font-medium">Selamat Datang!</h2>
-                      <p className="mt-1">Pilih pertanyaan yang sering diajukan atau ketik pertanyaan baru di bawah.</p>
+                      <p className="mt-1">Ketik pertanyaan Anda di bawah untuk memulai.</p>
                   </div>
                 )}
                 {messages.map((message) => (
@@ -188,38 +154,6 @@ export default function ChatView() {
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="lg:col-span-1 h-full">
-        <Card className="h-full flex flex-col">
-            <CardHeader>
-                <CardTitle className="font-headline text-lg">Pertanyaan Cepat</CardTitle>
-                <CardDescription>Pilih pertanyaan untuk melihat jawaban secara instan.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow overflow-y-auto">
-                {interactionsLoading ? (
-                  <div className="space-y-2">
-                    <Skeleton className="h-9 w-full" />
-                    <Skeleton className="h-9 w-3/4" />
-                    <Skeleton className="h-9 w-full" />
-                    <Skeleton className="h-9 w-5/6" />
-                  </div>
-                ) : (
-                    <div className="flex flex-col gap-2">
-                        {interactionsData && interactionsData.length > 0 ? (
-                            interactionsData.map(interaction => (
-                                <Button key={interaction.id} variant="outline" className="w-full justify-start text-left h-auto whitespace-normal" onClick={() => handleQuickQuestion(interaction)}>
-                                    {interaction.question}
-                                </Button>
-                            ))
-                        ) : (
-                            <p className="text-sm text-muted-foreground text-center pt-8">Belum ada pertanyaan yang disimpan.</p>
-                        )}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

@@ -80,46 +80,6 @@
         "createdAt",
         "updatedAt"
       ]
-    },
-    "ChatbotInteraction": {
-      "title": "Chatbot Interaction",
-      "type": "object",
-      "description": "Represents a stored question and answer interaction with the chatbot for reuse.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique ID for the interaction."
-        },
-        "question": {
-          "type": "string",
-          "description": "The question asked by the user."
-        },
-        "answer": {
-          "type": "string",
-          "description": "The final, approved answer provided by the chatbot."
-        },
-        "category": {
-          "type": "string",
-          "description": "The category of the question.",
-          "enum": [
-            "SOP",
-            "Product",
-            "Tacit"
-          ]
-        },
-        "createdAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp of when the interaction was created."
-        }
-      },
-      "required": [
-        "id",
-        "question",
-        "answer",
-        "category",
-        "createdAt"
-      ]
     }
   },
   "auth": {
@@ -160,24 +120,8 @@
             }
           ]
         }
-      },
-      {
-        "path": "/chatbotInteractions/{interactionId}",
-        "definition": {
-          "entityName": "ChatbotInteraction",
-          "schema": {
-            "$ref": "#/backend/entities/ChatbotInteraction"
-          },
-          "description": "Stores approved question-answer pairs for the chatbot's 'Quick Question' mode. Readable by all, creatable by all, but only updatable/deletable by Admins.",
-          "params": [
-            {
-              "name": "interactionId",
-              "description": "The unique ID for the chatbot interaction."
-            }
-          ]
-        }
       }
     ],
-    "reasoning": "This Firestore structure is designed to support the YourbAIstyle application, focusing on secure, role-based access control. User profiles with roles are stored in a top-level 'users' collection. A global 'knowledge' collection is readable by all but only writable by admins. A global 'chatbotInteractions' collection stores curated Q&A pairs for quick reuse, is readable by all, creatable by all, but updatable/deletable only by Admins."
+    "reasoning": "This Firestore structure is designed to support the YourbAIstyle application, focusing on secure, role-based access control. User profiles with roles are stored in a top-level 'users' collection. A global 'knowledge' collection is readable by all but only writable by admins."
   }
 }
