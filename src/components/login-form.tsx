@@ -9,8 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { useFirestore, useAuth as useFirebaseAuth, setDocumentNonBlocking } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { useFirestore, useAuth as useFirebaseAuth } from "@/firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("pegawai@gmail.com");
@@ -25,15 +25,20 @@ export default function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    if (!auth || !firestore) return;
+    if (!auth || !firestore) {
+      setError("Firebase not initialized.");
+      setLoading(false);
+      return;
+    }
 
     try {
       // First, try to sign in
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/");
     } catch (signInError: any) {
-      // If user does not exist, try to sign them up
-      if (signInError.code === 'auth/user-not-found') {
+      // If sign-in fails because the user doesn't exist, try to sign them up.
+      // 'auth/invalid-credential' can mean user not found or wrong password.
+      if (signInError.code === 'auth/invalid-credential' || signInError.code === 'auth/user-not-found') {
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const user = userCredential.user;
@@ -46,15 +51,22 @@ export default function LoginForm() {
           const userProfile = {
             uid: user.uid,
             email: user.email,
-            displayName: user.displayName,
+            displayName: user.email, // Default displayName to email
             role: role,
           };
           
-          setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+          // Wait for the user profile to be created before redirecting
+          await setDoc(userDocRef, userProfile, { merge: true });
 
           router.push("/");
         } catch (signUpError: any) {
-          setError(signUpError.message);
+          // If sign up fails with 'email-already-in-use', it means the user exists
+          // and the original error was a wrong password.
+          if (signUpError.code === 'auth/email-already-in-use') {
+            setError("Invalid credentials. Please check your password.");
+          } else {
+            setError(signUpError.message);
+          }
         }
       } else {
         // Handle other sign-in errors
