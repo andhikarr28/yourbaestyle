@@ -13,8 +13,8 @@ import { useFirestore, useAuth as useFirebaseAuth } from "@/firebase";
 import { doc, setDoc } from "firebase/firestore";
 
 export default function LoginForm() {
-  const [email, setEmail] = useState("pegawai@gmail.com");
-  const [password, setPassword] = useState("pegawai123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -90,7 +90,7 @@ export default function LoginForm() {
             <Input
               id="email"
               type="email"
-              placeholder="pegawai@gmail.com"
+              placeholder="email@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -104,6 +104,7 @@ export default function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              placeholder="••••••••"
             />
           </div>
           {error && (
